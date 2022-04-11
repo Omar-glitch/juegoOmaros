@@ -486,13 +486,16 @@ function main() {
         ctx.fillText(cadena, lon, 220);
         const body = document.querySelector('body');
         const button = document.createElement('button');
-        button.classList.add('jugar');
-        button.addEventListener('click', () => {
-            button.parentElement.removeChild(button);
-            reset();
-        })
-        button.innerHTML = "Reiniciar";
-        body.appendChild(button);
+        cAnimationFrame(animate);
+        if (!document.querySelector('.jugar')) {
+            button.classList.add('jugar');
+            button.addEventListener('click', () => {
+                button.parentElement.removeChild(button);
+                reset();
+            })
+            button.innerHTML = "Reiniciar";
+            body.appendChild(button);
+        } 
     }
 
     var animateMain = rAnimationFrame(animate);
