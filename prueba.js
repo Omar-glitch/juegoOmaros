@@ -58,7 +58,7 @@ const cargado = (e) => {
     ctx.fillText(`Cargando recursos (${cargas}/${num_cargas})`, 450, 580)
     ctx.restore();
     e.target.removeEventListener(e.type, cargado)
-    if (cargas === num_cargas) show_intro_level();
+    if (cargas === num_cargas && !playing) show_intro_level();
 }
 
 const cargando = (num) => {
@@ -83,16 +83,16 @@ const cargando = (num) => {
     sprite = new Image();
     sprite.addEventListener('load', cargado)
     sprite.src = 'ImgPruebas/sprite.png';
- 
-    audio_level.addEventListener('canplaythrough', cargado);
-    mybullet.addEventListener('canplaythrough', cargado);
-    audio_intro.addEventListener('canplaythrough', cargado);
-    health_audio.addEventListener('canplaythrough', cargado);
-    time_audio.addEventListener('canplaythrough', cargado);
-    bullets_audio.addEventListener('canplaythrough', cargado);
-    fast_audio.addEventListener('canplaythrough', cargado);
-    power_audio.addEventListener('canplaythrough', cargado);
-    explosion_audio.addEventListener('canplaythrough', cargado);
+
+    audio_level.addEventListener('canplay', cargado);
+    mybullet.addEventListener('canplay', cargado);
+    audio_intro.addEventListener('canplay', cargado);
+    health_audio.addEventListener('canplay', cargado);
+    time_audio.addEventListener('canplay', cargado);
+    bullets_audio.addEventListener('canplay', cargado);
+    fast_audio.addEventListener('canplay', cargado);
+    power_audio.addEventListener('canplay', cargado);
+    explosion_audio.addEventListener('canplay', cargado);
 }
 
 const image_properties = [
@@ -565,3 +565,82 @@ button_for_play.addEventListener('click', () => {
     cargando(10);
     canvas.style.background = 'black';
 })
+
+const cont = document.querySelector('.cont')
+const joystick = document.querySelector('#joystick');
+const joy = document.querySelector('.joy');
+let wj = joystick.clientWidth;
+let hj = joystick.clientHeight;
+let touching = false;
+let transX = 0;
+let transY = 0;
+
+const touchstart = (e) => {
+    if (touching) return;
+    touching = true;
+    joy.style.transition = "none";
+}
+
+const touchmove = (e) => {
+    if (!touching) return;
+    if (!e.type.includes("touch")) return;
+    console.log(e)
+
+    const { left, top, width, height } = joystick.getBoundingClientRect();
+    lista_teclas["ArrowRight"] = (e.touches[0].clientX - left > width / 2 + 10);
+    lista_teclas["ArrowLeft"] = (e.touches[0].clientX - left < width / 2 - 10);
+    lista_teclas["ArrowUp"] = (e.touches[0].clientY - top < height / 2 - 10);
+    lista_teclas["ArrowDown"] = (e.touches[0].clientY - top > height / 2 + 10);
+    const w = joy.clientWidth;
+    const h = joy.clientHeight;
+    
+    transX = e.touches[0].clientX - left - w;
+    transY = e.touches[0].clientY - top - h;
+    joy.style.transform = `translate3d(${transX}px, ${transY}px, 0)`;
+}
+
+const touchend = (e) => {
+    if (!touching) return;
+    lista_teclas["ArrowRight"] = false;
+    lista_teclas["ArrowLeft"] = false;
+    lista_teclas["ArrowUp"] = false;
+    lista_teclas["ArrowDown"] = false;
+    joy.style.transition = ".4s transform";
+    joy.style.transform = `translate3d(0, 0, 0)`;
+    touching = false;
+}
+
+joystick.addEventListener('touchstart', touchstart);
+joystick.addEventListener('touchmove', touchmove);
+joystick.addEventListener('touchend', touchend);
+joystick.addEventListener('touchleave', touchend);
+
+const fire_button = document.querySelector('#fire');
+
+const throw_bullet = () => lista_teclas[" "] = true;
+const stop_throwing = () => lista_teclas[" "] = false;
+
+fire_button.addEventListener('touchstart', throw_bullet);
+fire_button.addEventListener('touchmove', stop_throwing);
+fire_button.addEventListener('touchend', stop_throwing);
+fire_button.addEventListener('touchleave', stop_throwing);
+
+const button_change_media = document.querySelector('#media');
+
+const to_pc = () => {
+    cont.style.visibility = "hidden";
+    fire_button.style.visibility = "hidden";
+}
+
+const to_movil = () => {
+    cont.style.visibility = "visible";
+    fire_button.style.visibility = "visible";
+}
+
+const change = (e) => {
+    const { value } = e.target;
+    if (value === "pc") to_pc();
+    if (value === "movil") to_movil();
+}
+
+button_change_media.addEventListener('change', change);
