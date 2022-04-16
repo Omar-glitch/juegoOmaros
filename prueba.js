@@ -20,7 +20,11 @@ let playing = false;
 let item_counter = 0;
 let random = null;
 let item = null;
-
+// animation variables
+let animateMain;
+let introduction;
+// media variables
+let launcher = null;
 let sprite;
 let audio_level;
 let audio_intro;
@@ -33,6 +37,7 @@ let explosion_audio;
 let mybullet;
 let cargas = 0;
 let num_cargas = 0;
+let time_bullet = 0;
 
 const get_audio = (src) => {
     const sound = new Audio();
@@ -57,7 +62,7 @@ const cargado = (e) => {
     ctx.font = "bold 1.25rem Righteous";
     ctx.fillText(`Cargando recursos (${cargas}/${num_cargas})`, 450, 580)
     ctx.restore();
-    e.target.removeEventListener(e.type, cargado)
+    e.target.removeEventListener(e.type, cargado);
     if (cargas === num_cargas && !playing) show_intro_level();
 }
 
@@ -228,10 +233,11 @@ function main() {
                 if (fast_bullet) {
                     bullets -= 1;
                     fast_bullet = fast_throw;
-                    mybullet.volume = 1;
+                    mybullet.volume = .5;
                     mybullet.currentTime = (fast_throw) ? 0.02 : 0;
                     mybullet.play();
                     launcher.misiles.push({x: launcher.x + 22, y: launcher.y, w: 5, h: 10});
+                    time_bullet = contador;
                     if (!fast_throw) setTimeout(() => fast_bullet = true, 300);
                 }
             }
@@ -331,8 +337,7 @@ function main() {
                 ctx.fillStyle = e.y % 4 ? "yellow" : "red";
                 ctx.font = 'bold 1.625rem Arial';
                 ctx.fillText(e.vida, e.x + 16, e.y -= 2);
-                ctx.restore()
-                ctx.save();
+                ctx.restore();
 
                 if (e.y < e.h) this.list_hits.splice(i, 1);
             }
@@ -345,12 +350,12 @@ function main() {
         }
 
         this.bullet_hit_enemy = function (m, mi) {
-            for (let g = 0; g < enemies.length; g++) {
-                let e = enemies[g];
+            for (let i = 0; i < enemies.length; i++) {
+                let e = enemies[i];
                 if (has_hitted(m, e, 0, 0, e.w, e.w)) {
                     e.vida -= 1;
                     this.list_hits.push({x: e.x, y: e.y + 30, vida: e.vida, h: e.y - 10});
-                    if (e.vida <= 0) this.enemie_defeated(g);
+                    if (e.vida <= 0) this.enemie_defeated(i);
                     this.misiles.splice(mi, 1);
                 }
             }
@@ -427,20 +432,11 @@ function main() {
             }
         }
     }
-
-    var launcher = new launche();
+    launcher = new launche();
 
     const clear_intervals = () => {
+        end_game = true;
         game_over();
-        cAnimationFrame(animateMain);
-    }
-
-    const reset_values = () => {
-        enemies = [];
-        launcher.misiles = [];
-        launcher.misiles_enemigos = [];
-        launcher.ondas = [];
-        launcher.list_hits = [];
     }
 
     function animate() {
@@ -457,10 +453,12 @@ function main() {
     }
 
     function game_over() {
+        launcher = null;
+        cAnimationFrame(animateMain);
+        cAnimationFrame(introduction);
         end_game = true;
         playing = false;
         ctx.clearRect(0, 0, cW, cH);
-        reset_values();
         audio_level.pause();
 
         if (bullets < 1) return mensaje('No hay balas');
@@ -469,13 +467,12 @@ function main() {
         if (level >= 10) return mensaje('Has ganado');
 
         level++;
-        cargando(10)
         contador_intro = 600;
-        bullets += 20;
-        time += 50;
+        cargando(10);
+        bullets += 25;
+        time += 40;
         health += 5;
         score += level * 10;
-        end_game = false;
     }
 
     function mensaje(cadena) {
@@ -486,7 +483,7 @@ function main() {
         ctx.fillText(cadena, lon, 220);
         const body = document.querySelector('body');
         const button = document.createElement('button');
-        cAnimationFrame(animate);
+
         if (!document.querySelector('.jugar')) {
             button.classList.add('jugar');
             button.addEventListener('click', () => {
@@ -498,7 +495,7 @@ function main() {
         } 
     }
 
-    var animateMain = rAnimationFrame(animate);
+    animateMain = rAnimationFrame(animate);
 }
 
 function show_intro_level() {
@@ -526,12 +523,12 @@ function show_intro_level() {
         if (contador_intro > -45) introduction = rAnimationFrame(intro);
         else {
             canvas.style.borderColor = `var(--green)`;
-            cAnimationFrame(introduction);
+            end_game = false;
             main();
         }
     }
 
-    let introduction = rAnimationFrame(intro);
+    introduction = rAnimationFrame(intro);
 }
 
 setInterval(() => {
@@ -542,11 +539,14 @@ const reset = () => {
     end_game = false;
     level = 1;
     contador = 1;
+    item_counter = 0;
     contador_intro = 600;
     cargando(10);
     score = 0;
     health = 35;
     time = 70;
+    speed = false;
+    fast_throw = false;
     bullets = 600;
 }
 
@@ -575,7 +575,7 @@ let touching = false;
 let transX = 0;
 let transY = 0;
 
-const touchstart = (e) => {
+const touchstart = () => {
     if (touching) return;
     touching = true;
     joy.style.transition = "none";
@@ -584,18 +584,24 @@ const touchstart = (e) => {
 const touchmove = (e) => {
     if (!touching) return;
     if (!e.type.includes("touch")) return;
-    console.log(e)
+    let t = null;
+    for (let i = 0; i < e.touches.length; i++) {
+        const touch = e.touches[i];
+        if (touch.target.contains(joystick)) t = touch;
+    }
+
+    if (!t) return;
 
     const { left, top, width, height } = joystick.getBoundingClientRect();
-    lista_teclas["ArrowRight"] = (e.touches[0].clientX - left > width / 2 + 10);
-    lista_teclas["ArrowLeft"] = (e.touches[0].clientX - left < width / 2 - 10);
-    lista_teclas["ArrowUp"] = (e.touches[0].clientY - top < height / 2 - 10);
-    lista_teclas["ArrowDown"] = (e.touches[0].clientY - top > height / 2 + 10);
+    lista_teclas["ArrowRight"] = (t.clientX - left > width / 2 + 10);
+    lista_teclas["ArrowLeft"] = (t.clientX - left < width / 2 - 10);
+    lista_teclas["ArrowUp"] = (t.clientY - top < height / 2 - 10);
+    lista_teclas["ArrowDown"] = (t.clientY - top > height / 2 + 10);
     const w = joy.clientWidth;
     const h = joy.clientHeight;
     
-    transX = e.touches[0].clientX - left - w;
-    transY = e.touches[0].clientY - top - h;
+    transX = t.clientX - left - w;
+    transY = t.clientY - top - h;
     joy.style.transform = `translate3d(${transX}px, ${transY}px, 0)`;
 }
 
@@ -621,9 +627,8 @@ const throw_bullet = () => lista_teclas[" "] = true;
 const stop_throwing = () => lista_teclas[" "] = false;
 
 fire_button.addEventListener('touchstart', throw_bullet);
-fire_button.addEventListener('touchmove', stop_throwing);
+fire_button.addEventListener('touchmove', throw_bullet);
 fire_button.addEventListener('touchend', stop_throwing);
-fire_button.addEventListener('touchleave', stop_throwing);
 
 const button_change_media = document.querySelector('#media');
 

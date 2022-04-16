@@ -65,7 +65,7 @@
     border-radius: 50%;
     display: grid;
     place-items: center;
-    touch-action: manipulation;
+    touch-action: none;
 }
 
 #joystick svg {
@@ -98,7 +98,7 @@
     border-radius: 50%;
     display: grid;
     place-items: center;
-    touch-action: manipulation;
+    touch-action: none;
     visibility: hidden;
 }
 
@@ -117,6 +117,7 @@
     background-color: transparent;
     color: var(--green);
     outline: none;
+    touch-action: manipulation;
 }
 
 #media option {
@@ -127,6 +128,13 @@
     #canvas {
         width: 20rem;
         height: 18.75rem;
+    }
+}
+
+@media (min-width: 400px) {
+    #canvas {
+        width: 23.75rem;
+        height: 21.25rem;
     }
 }
 
